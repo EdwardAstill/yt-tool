@@ -1,0 +1,68 @@
+<h2>Filter Menu</h2>
+<p class="subtitle">What should the filter popup look like when you click "Filter ▼"?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Dropdown Panel</h3>
+      <p>A panel drops down below the filter button with radio-style options for each category. Apply/Clear buttons at the bottom.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.8;padding:16px;background:#1a1a2e;color:#e0e0e0">
+          <div style="display:flex;gap:12px;margin-bottom:4px">
+            <span style="background:#555;padding:2px 8px;border-radius:4px">Sort: Latest ↓</span>
+            <span style="background:#7c3aed;padding:2px 8px;border-radius:4px;color:white">Filter ▲</span>
+            <span style="background:#333;padding:2px 8px;border-radius:4px;flex:1">🔍 Search...</span>
+          </div>
+          <div style="border:1px solid #555;border-radius:4px;padding:12px;margin-left:80px;max-width:280px">
+            <div style="color:#aaa;font-size:11px;text-transform:uppercase;margin-bottom:4px">Date Range</div>
+            <div>( ) Last week</div>
+            <div>(●) Last month</div>
+            <div>( ) Last 6 months</div>
+            <div>( ) Last year</div>
+            <div>( ) All time</div>
+            <div style="color:#aaa;font-size:11px;text-transform:uppercase;margin:8px 0 4px 0">Duration</div>
+            <div>( ) Under 5 min</div>
+            <div>( ) 5–20 min</div>
+            <div>( ) Over 20 min</div>
+            <div>(●) Any duration</div>
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <span style="background:#7c3aed;color:white;padding:2px 12px;border-radius:4px">Apply</span>
+              <span style="background:#333;padding:2px 12px;border-radius:4px">Clear</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Modal Dialog</h3>
+      <p>A centered modal overlay with the same filter options. Feels more deliberate, harder to accidentally dismiss.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-body" style="font-family:monospace;font-size:12px;line-height:1.8;padding:16px;background:#1a1a2e;color:#e0e0e0;position:relative">
+          <div style="opacity:0.3">
+            <div>[x] God-Tier Developer Roadmap</div>
+            <div>[x] I built an app with AI only</div>
+            <div>[ ] 10 CSS tricks you didn't know</div>
+          </div>
+          <div style="border:2px solid #7c3aed;border-radius:8px;padding:16px;margin:8px auto;max-width:280px;background:#1a1a2e">
+            <div style="text-align:center;font-weight:bold;margin-bottom:8px">Filters</div>
+            <div style="color:#aaa;font-size:11px;text-transform:uppercase;margin-bottom:4px">Date Range</div>
+            <div>(●) Last month</div>
+            <div>( ) Last 6 months</div>
+            <div>( ) All time</div>
+            <div style="color:#aaa;font-size:11px;text-transform:uppercase;margin:8px 0 4px 0">Duration</div>
+            <div>(●) Any duration</div>
+            <div style="margin-top:12px;text-align:center">
+              <span style="background:#7c3aed;color:white;padding:2px 16px;border-radius:4px">Apply</span>
+              &nbsp;
+              <span style="background:#333;padding:2px 16px;border-radius:4px">Clear</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

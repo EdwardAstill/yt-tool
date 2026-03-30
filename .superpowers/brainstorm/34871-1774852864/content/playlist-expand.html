@@ -1,0 +1,46 @@
+<h2>Playlist Expand/Collapse Behavior</h2>
+<p class="subtitle">When viewing playlists from a channel, how should the "dropdown" work?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Inline Expand</h3>
+      <p>Clicking a playlist expands it in-place to show its videos underneath, indented. You can select the whole playlist (checkbox on the playlist row) or expand and cherry-pick individual videos. Like a file tree.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Playlists Tab</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8;padding:16px">
+          <div>[x] ▶ JavaScript Fundamentals (12 videos)</div>
+          <div>[x] ▼ React Tutorial Series (8 videos)</div>
+          <div style="padding-left:24px">[x] React in 100 Seconds</div>
+          <div style="padding-left:24px">[ ] React Hooks Explained</div>
+          <div style="padding-left:24px">[x] useEffect Deep Dive</div>
+          <div style="padding-left:24px">[ ] React Router Tutorial</div>
+          <div style="padding-left:24px;color:#666">... 4 more</div>
+          <div>[ ] ▶ Python for Beginners (15 videos)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Navigate Into Playlist</h3>
+      <p>Clicking a playlist pushes a new screen showing its videos (like the video selection screen). A "Back" button returns to the playlist list. Selecting the whole playlist = selecting it from the list without clicking in.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Playlist List → Click → Video List</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8;padding:16px">
+          <div><strong>Screen 1:</strong></div>
+          <div>[x] JavaScript Fundamentals (12 videos)</div>
+          <div>[x] React Tutorial Series (8 videos) ← click</div>
+          <div>[ ] Python for Beginners (15 videos)</div>
+          <div style="margin-top:12px"><strong>Screen 2 (after click):</strong></div>
+          <div>← Back to Playlists</div>
+          <div>[x] React in 100 Seconds</div>
+          <div>[ ] React Hooks Explained</div>
+          <div>[x] useEffect Deep Dive</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
