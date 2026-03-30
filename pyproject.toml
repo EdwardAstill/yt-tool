@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "click",
+    "textual",
     "youtube-transcript-api",
     "yt-dlp",
 ]
@@ -16,3 +17,4 @@ build-backend = "hatchling.build"
 
 [project.scripts]
 ytscript = "ytscript.cli:main"
+ytscript-tui = "ytscript.tui:main"
