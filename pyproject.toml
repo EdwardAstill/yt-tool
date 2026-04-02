@@ -3,7 +3,7 @@ name = "ytscript"
 version = "0.1.0"
 description = "A CLI tool for getting YouTube video transcripts into txt files"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 dependencies = [
     "click",
     "textual",

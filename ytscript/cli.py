@@ -4,6 +4,7 @@ import click
 import yt_dlp
 
 from ytscript.core import (
+    _YDL_FLAT_OPTS,
     extract_playlist_id,
     extract_video_id,
     is_playlist,
@@ -19,9 +20,7 @@ def main(link):
     if is_playlist(link):
         playlist_id = extract_playlist_id(link)
 
-        with yt_dlp.YoutubeDL(
-            {"quiet": True, "no_warnings": True, "extract_flat": True}
-        ) as ydl:
+        with yt_dlp.YoutubeDL(_YDL_FLAT_OPTS) as ydl:
             info = ydl.extract_info(
                 f"https://www.youtube.com/playlist?list={playlist_id}",
                 download=False,
