@@ -1,19 +1,20 @@
-"""ytscript — transcripts, audio, summaries, and search for YouTube URLs.
+"""yt-tool — one-stop YouTube CLI.
 
 Subcommands:
-  transcript  Fetch one video or a whole playlist as .txt
-  audio       Download video audio as MP3 or WAV (any ffmpeg format)
-  summary     Fetch transcript, produce a structured summary
+  transcript  Fetch one video / playlist / channel as .txt
+  audio       Extract audio as MP3 / WAV / any ffmpeg format (with clip trim)
+  video       Download video as MP4 / MKV / WebM (with clip trim, subs)
+  summary     Fetch transcript, produce a structured summary via Anthropic
   channel     List a channel's recent videos (metadata only)
   playlists   List a channel's playlists (metadata only)
   search      Search YouTube and list matching videos
 
 Runtime deps (lazy-installed on first run):
-  yt-dlp                 — URL resolution, audio extraction, channel / playlist walk
+  yt-dlp                 — URL resolution, audio/video extraction, channel/playlist walk
   youtube-transcript-api — transcript text
 
 System deps:
-  ffmpeg — required for audio extraction
+  ffmpeg — required for audio + video extraction
 """
 
 from __future__ import annotations
@@ -460,8 +461,71 @@ def search(
         typer.echo(f"{vid}\t{int(dur)}s\t{uploader}\t{title}")
 
 
+@app.command()
+def video(
+    url: str = typer.Argument(..., help="Video or playlist URL"),
+    format: str = typer.Option(
+        "mp4", "--format", "-f", help="Output container: mp4, mkv, webm"
+    ),
+    quality: str = typer.Option(
+        "bestvideo+bestaudio/best",
+        "--quality",
+        "-q",
+        help="yt-dlp format selector. Examples: '1080', '720', 'best', 'bestvideo[height<=720]+bestaudio'",
+    ),
+    output_dir: Path = typer.Option(Path.cwd(), "--out", "-o"),
+    start: Optional[str] = typer.Option(None, "--start", help="Clip start HH:MM:SS"),
+    end: Optional[str] = typer.Option(None, "--end", help="Clip end HH:MM:SS"),
+    add_metadata: bool = typer.Option(True, "--metadata/--no-metadata"),
+    embed_thumbnail: bool = typer.Option(False, "--embed-thumbnail"),
+    subtitles: bool = typer.Option(False, "--subs", help="Embed available subtitles"),
+):
+    """Download video as MP4 (or MKV / WebM)."""
+    _ensure_deps()
+    _require_ffmpeg()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    import yt_dlp
+
+    # Heuristic for convenience: if the user passed "1080" / "720" / etc.
+    # interpret as a max-height filter + audio.
+    selector = quality
+    if selector.isdigit():
+        selector = f"bestvideo[height<={selector}]+bestaudio/best[height<={selector}]"
+
+    postprocessors: list[dict[str, Any]] = []
+    if add_metadata:
+        postprocessors.append({"key": "FFmpegMetadata"})
+    if embed_thumbnail:
+        postprocessors.append({"key": "EmbedThumbnail"})
+
+    opts: dict[str, Any] = {
+        "format": selector,
+        "merge_output_format": format,
+        "outtmpl": str(output_dir / "%(title)s.%(ext)s"),
+        "quiet": True,
+        "no_warnings": True,
+    }
+    if postprocessors:
+        opts["postprocessors"] = postprocessors
+    if subtitles:
+        opts["writesubtitles"] = True
+        opts["embedsubtitles"] = True
+        opts["subtitleslangs"] = ["en.*"]
+    if start or end:
+        from yt_dlp.utils import download_range_func
+        ranges = [(_hms_to_seconds(start or "0:0"), _hms_to_seconds(end) if end else None)]
+        opts["download_ranges"] = download_range_func(None, ranges)
+        opts["force_keyframes_at_cuts"] = True
+
+    with yt_dlp.YoutubeDL(opts) as ydl:  # type: ignore[arg-type]
+        ydl.download([url])
+
+    typer.echo(f"Saved video(s) to {output_dir}/")
+
+
 def main() -> None:
-    """Entry point for the `ytscript` console script."""
+    """Entry point for the `yt-tool` console script."""
     app()
 
 

@@ -17,7 +17,7 @@ from textual.widgets import (
 )
 from textual.widgets.selection_list import Selection
 
-from ytscript.core import (
+from yt_tool.core import (
     extract_playlist_id,
     fetch_channel_playlists,
     fetch_channel_videos,

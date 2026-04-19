@@ -1,20 +1,21 @@
-# ytscript
+# yt-tool
 
-YouTube CLI for transcripts, audio extraction, summaries, channel / playlist
-browsing, and search. Also ships an interactive Textual TUI.
+One-stop YouTube CLI: transcripts, audio, **video (MP4)**, summaries,
+channel / playlist listing, and search. Also ships a Textual TUI.
 
-Extracted from [agentfiles](https://github.com/EdwardAstill/agentfiles) v0.2
-with a bigger CLI surface. The original transcript-only flow still works.
+Formerly `ytscript` — renamed 2026-04-19 when the video subcommand
+landed and the scope outgrew its old name. The `ytscript` GitHub URL
+redirects here.
 
 ## Install
 
 ```bash
 uv pip install -e .        # from source
-# or once published:
-# pipx install ytscript
+# once published:
+# pipx install yt-tool
 ```
 
-Optional: install ffmpeg for audio extraction.
+Install ffmpeg for audio + video extraction.
 
 ```bash
 pacman -S ffmpeg   # or: apt install ffmpeg | brew install ffmpeg
@@ -23,67 +24,104 @@ pacman -S ffmpeg   # or: apt install ffmpeg | brew install ffmpeg
 ## CLI
 
 ```
-ytscript <subcommand> [args]
+yt-tool <subcommand> [args]
 
 Subcommands:
   transcript  Fetch transcript(s) as .txt files
-  audio       Download audio as MP3 / WAV / any ffmpeg format
-  summary     Fetch transcript and produce a structured summary (needs ANTHROPIC_API_KEY)
+  audio       Extract audio: MP3 / WAV / FLAC / M4A / OPUS / OGG (with clip trim)
+  video       Download video: MP4 / MKV / WebM (with clip trim, subs)
+  summary     Transcript → structured summary via Anthropic (needs ANTHROPIC_API_KEY)
   channel     List a channel's recent videos (id, title, date, duration)
-  playlists   List a channel's playlists (id, video_count, title)
-  search      Search YouTube and print TSV matches: id, duration, uploader, title
+  playlists   List a channel's playlists (id, title, video_count)
+  search      Search YouTube and print TSV: id, duration, uploader, title
 ```
 
-### Examples
+## Examples
+
+### Transcripts
 
 ```bash
 # one video
-ytscript transcript 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+yt-tool transcript 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 
-# a whole playlist → creates a subfolder with one .txt per video
-ytscript transcript 'https://www.youtube.com/playlist?list=PLxxxxx'
+# a whole playlist → folder with one .txt per video
+yt-tool transcript 'https://www.youtube.com/playlist?list=PLxxxxx'
 
-# a channel — most recent 30 videos
-ytscript transcript @veritasium --limit 30
-
-# audio as MP3
-ytscript audio 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' --format mp3
-
-# audio as WAV, clipped to [1:30 → 2:45]
-ytscript audio <url> --format wav --start 1:30 --end 2:45
-
-# summarize a video via Claude
-ANTHROPIC_API_KEY=sk-ant-... ytscript summary <url>
-
-# what did this channel upload lately?
-ytscript channel @twocentsoninstruction --limit 10
-
-# what playlists does it have?
-ytscript playlists @veritasium
-
-# search
-ytscript search "best bass lessons" --limit 20
+# 30 most recent from a channel
+yt-tool transcript @veritasium --limit 30
 ```
 
-### Interactive TUI
+### Audio
 
 ```bash
-ytscript-tui
+yt-tool audio <url> --format mp3              # best VBR MP3
+yt-tool audio <url> --format wav --out /tmp   # WAV for ASR pipeline
+yt-tool audio <url> --start 1:30 --end 2:45   # trim to clip
+yt-tool audio <url> --embed-thumbnail         # music-library friendly
 ```
 
-Textual-based UI for browsing transcripts without typing URLs. The TUI
-shares helpers with `ytscript.core` and predates the modern CLI surface.
+### Video (MP4, MKV, WebM)
+
+```bash
+yt-tool video <url>                           # best quality MP4
+yt-tool video <url> --quality 720             # cap at 720p (shorthand)
+yt-tool video <url> --quality 'bestvideo[height<=1080]+bestaudio'
+yt-tool video <url> --format mkv              # MKV container
+yt-tool video <url> --format webm --embed-thumbnail
+yt-tool video <url> --start 0:30 --end 1:45   # clip a segment
+yt-tool video <url> --subs                    # embed English subtitles
+```
+
+### Search → audio (the "I only have a name" flow)
+
+```bash
+yt-tool search 'radiohead creep' --limit 5
+# id            duration  uploader       title
+# XFkzRNyygfk   237s      Radiohead      Radiohead - Creep
+# ...
+
+yt-tool audio 'https://www.youtube.com/watch?v=XFkzRNyygfk' --format mp3
+```
+
+### Summaries
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+yt-tool summary <url>                         # writes summary.md in CWD
+yt-tool summary <url> --keep-transcript       # also save raw transcript
+```
+
+### Channel / playlist metadata
+
+```bash
+yt-tool channel @veritasium --limit 10
+yt-tool playlists @veritasium
+```
+
+## Interactive TUI
+
+```bash
+yt-tool-tui
+```
+
+Textual-based UI for browsing. Shares helpers with `yt_tool.core`.
+
+## URL shapes accepted
+
+Any YouTube URL pattern: `watch?v=`, `youtu.be/`, `/shorts/`, `/embed/`,
+`/live/`, `/playlist?list=`, `/@handle`, `/channel/UC…`, `/c/name`,
+`/user/name`, or a bare `@handle`.
 
 ## Deps
 
-- `yt-dlp` — URL resolution, audio extraction, channel/playlist walks, search
+- `yt-dlp` — URL resolution + audio/video extraction + channel/playlist walk + search
 - `youtube-transcript-api` — transcript text
 - `typer` / `click` — CLI framework
 - `textual` — TUI
-- `anthropic` — optional, for `summary` subcommand
-- `ffmpeg` — system tool, for audio extraction
+- `anthropic` — optional, for `summary`
+- `ffmpeg` — system tool, for audio + video post-processing
 
 ## Status
 
-Active. Part of the [EdwardAstill/eastill](https://github.com/EdwardAstill/eastill)
+Active — tracked in the [EdwardAstill/eastill](https://github.com/EdwardAstill/eastill)
 repo index.

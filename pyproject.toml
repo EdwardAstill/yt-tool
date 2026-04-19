@@ -1,7 +1,7 @@
 [project]
-name = "ytscript"
-version = "0.2.0"
-description = "CLI for YouTube transcripts, audio, summaries, channel/playlist listing, and search"
+name = "yt-tool"
+version = "0.3.0"
+description = "One-stop YouTube CLI — transcripts, audio (MP3/WAV/...), video (MP4), summaries, channel/playlist listing, search"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -20,5 +20,5 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-ytscript = "ytscript.cli:main"
-ytscript-tui = "ytscript.tui:main"
+yt-tool = "yt_tool.cli:main"
+yt-tool-tui = "yt_tool.tui:main"
