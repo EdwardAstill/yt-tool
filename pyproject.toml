@@ -1,15 +1,19 @@
 [project]
 name = "ytscript"
-version = "0.1.0"
-description = "A CLI tool for getting YouTube video transcripts into txt files"
+version = "0.2.0"
+description = "CLI for YouTube transcripts, audio, summaries, channel/playlist listing, and search"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "typer",
     "click",
     "textual",
     "youtube-transcript-api",
     "yt-dlp",
 ]
+
+[project.optional-dependencies]
+summary = ["anthropic"]
 
 [build-system]
 requires = ["hatchling"]
