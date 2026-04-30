@@ -51,6 +51,35 @@ yt-tool transcript 'https://www.youtube.com/playlist?list=PLxxxxx'
 yt-tool transcript @veritasium --limit 30
 ```
 
+#### When YouTube IP-blocks you (HTTP 429)
+
+YouTube aggressively rate-limits transcript / timedtext fetches. `yt-tool` ships a multi-backend transcript pipeline (`youtube-transcript-api` → `yt-dlp` subtitles) with automatic retry, exponential backoff, proxy rotation, TLS-fingerprint impersonation, and partial-success batching.
+
+```bash
+# Use cookies from a logged-in browser profile (most reliable bypass)
+yt-tool transcript <url> --cookies-from-browser firefox
+
+# Pace requests to stay under the rate limit
+yt-tool transcript @channel --limit 30 --delay 5 --sleep-subtitles 2
+
+# Rotate through proxies on rate-limit errors
+yt-tool transcript <url> --proxy "http://prox-a:1080,http://prox-b:1080"
+
+# Bind outbound traffic to a specific local interface
+yt-tool transcript <url> --source-address 10.0.0.42
+
+# Force a TLS impersonation target (curl-cffi installed by default)
+yt-tool transcript <url> --impersonate chrome-136
+
+# Pin a specific yt-dlp youtube player_client chain
+yt-tool transcript <url> --player-client "tv_simply,web_safari,ios"
+
+# Batch with partial-success manifest (skip failures, log everything)
+yt-tool transcript @channel --limit 50 --manifest results.json --continue-on-error
+```
+
+The `auto` backend tries `youtube-transcript-api` first, then `yt-dlp` subtitles. Pin a single backend with `--backend api` or `--backend ytdlp`.
+
 ### Audio
 
 ```bash

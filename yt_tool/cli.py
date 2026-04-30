@@ -19,23 +19,32 @@ System deps:
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
 
 import typer
 
+from yt_tool.core import (
+    DEFAULT_PLAYER_CLIENTS as _DEFAULT_PLAYER_CLIENTS,
+    FetchConfig,
+    TranscriptError,
+    fetch_transcript as _fetch_transcript_text,
+)
+
 app = typer.Typer(help="YouTube: transcripts, audio, and summaries.")
 
 
 # ── Dependency bootstrap ──────────────────────────────────────────────────────
 
-_PIP_DEPS = ("yt-dlp", "youtube-transcript-api")
+_PIP_DEPS = ("yt-dlp", "youtube-transcript-api", "curl-cffi>=0.10,<0.15")
 
 
 def _ensure_deps() -> None:
@@ -49,6 +58,10 @@ def _ensure_deps() -> None:
         import youtube_transcript_api  # noqa: F401
     except ImportError:
         missing.append("youtube-transcript-api")
+    try:
+        import curl_cffi  # noqa: F401
+    except ImportError:
+        missing.append("curl-cffi>=0.10,<0.15")
 
     if not missing:
         return
@@ -123,14 +136,7 @@ def _sanitize(name: str) -> str:
 _YDL_FLAT: dict[str, Any] = {"quiet": True, "no_warnings": True, "extract_flat": True}
 
 
-# ── Core operations ──────────────────────────────────────────────────────────
-
-def _fetch_transcript_text(video_id: str) -> str:
-    from youtube_transcript_api import YouTubeTranscriptApi
-
-    api = YouTubeTranscriptApi()
-    snippets = api.fetch(video_id)
-    return " ".join(s.text for s in snippets)
+# ── Core operations (transcript fetch lives in yt_tool.core) ─────────────────
 
 
 def _get_video_title(video_id: str) -> str:
@@ -146,13 +152,22 @@ def _get_video_title(video_id: str) -> str:
     return info.get("title") or video_id
 
 
-def _save_transcript(video_id: str, output_dir: Path, title: Optional[str] = None) -> Path:
+def _save_transcript(
+    video_id: str,
+    output_dir: Path,
+    title: Optional[str] = None,
+    *,
+    cfg: Optional[FetchConfig] = None,
+) -> Path:
     if title is None:
         title = _get_video_title(video_id)
-    text = _fetch_transcript_text(video_id)
+    text = _fetch_transcript_text(video_id, cfg=cfg)
     path = output_dir / (_sanitize(title) + ".txt")
     path.write_text(text, encoding="utf-8")
     return path
+
+
+__all__ = ["app", "main", "FetchConfig", "TranscriptError"]
 
 
 def _walk_playlist(playlist_id: str):
@@ -218,17 +233,88 @@ def transcript(
     limit: int = typer.Option(
         30, "--limit", "-n", help="Max videos when URL is a channel"
     ),
+    delay: float = typer.Option(
+        0.0, "--delay", help="Seconds to pause between batch fetches (pacing)"
+    ),
+    max_retries: int = typer.Option(
+        3, "--max-retries", help="Retry attempts per video on rate-limit errors"
+    ),
+    backend: str = typer.Option(
+        "auto", "--backend", help="Transcript backend: auto | api | ytdlp"
+    ),
+    cookies: Optional[Path] = typer.Option(
+        None, "--cookies", help="Netscape cookies.txt (used by ytdlp backend)"
+    ),
+    cookies_from_browser: Optional[str] = typer.Option(
+        None,
+        "--cookies-from-browser",
+        help="Pull YouTube cookies from a local browser profile: firefox|chrome|brave|chromium|edge|safari",
+    ),
+    proxy: Optional[str] = typer.Option(
+        None,
+        "--proxy",
+        help="Proxy URL(s). Comma-separated for rotation on rate-limit, e.g. http://a:1080,http://b:1080",
+    ),
+    source_address: Optional[str] = typer.Option(
+        None, "--source-address", help="Bind outbound requests to this local IP"
+    ),
+    impersonate: Optional[str] = typer.Option(
+        None,
+        "--impersonate",
+        help="curl-cffi TLS-fingerprint target (chrome-136, safari-18.0, ...). Default: chrome-136 if curl-cffi installed",
+    ),
+    player_client: str = typer.Option(
+        _DEFAULT_PLAYER_CLIENTS,
+        "--player-client",
+        help="Comma-separated yt-dlp youtube player_client list",
+    ),
+    sleep_subtitles: float = typer.Option(
+        0.0,
+        "--sleep-subtitles",
+        help="Seconds yt-dlp sleeps between subtitle URL requests",
+    ),
+    manifest: Optional[Path] = typer.Option(
+        None, "--manifest", help="Write JSON manifest of success/failure by video id"
+    ),
+    continue_on_error: bool = typer.Option(
+        True,
+        "--continue-on-error/--stop-on-error",
+        help="In batch mode, keep going past failures",
+    ),
 ):
-    """Fetch transcript(s) as .txt files."""
+    """Fetch transcript(s) as .txt files.
+
+    Anti-bot tips when YouTube returns 429:
+      • try `--cookies-from-browser firefox` (must be logged into youtube.com)
+      • try `--proxy http://host:port` or comma-separated list to rotate
+      • try `--impersonate chrome-136` (needs curl-cffi installed)
+      • use `--delay 5` and `--sleep-subtitles 2` to pace yourself
+    """
     _ensure_deps()
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    proxies_list: Optional[list[str]] = None
+    if proxy:
+        proxies_list = [p.strip() for p in proxy.split(",") if p.strip()]
+
+    cfg = FetchConfig(
+        backend=backend,
+        cookies=cookies,
+        cookies_from_browser=cookies_from_browser,
+        max_retries=max_retries,
+        proxies=proxies_list,
+        source_address=source_address,
+        impersonate=impersonate,
+        player_client=player_client,
+        sleep_subtitles=sleep_subtitles,
+    )
 
     if _is_channel(url):
         entries = _walk_channel_videos(url, limit)
         if not entries:
             typer.echo("No videos found on channel.", err=True)
             raise typer.Exit(1)
-        _batch(entries, output_dir)
+        _batch(entries, output_dir, cfg, delay, manifest, continue_on_error)
         return
 
     if _is_playlist(url):
@@ -243,7 +329,7 @@ def transcript(
         sub = output_dir / _sanitize(ptitle)
         sub.mkdir(exist_ok=True)
         typer.echo(f"Saving playlist to: {sub}/")
-        _batch(entries, sub)
+        _batch(entries, sub, cfg, delay, manifest, continue_on_error)
         return
 
     vid = _extract_video_id(url)
@@ -251,24 +337,57 @@ def transcript(
         typer.echo("Invalid YouTube URL.", err=True)
         raise typer.Exit(1)
     try:
-        path = _save_transcript(vid, output_dir)
+        path = _save_transcript(vid, output_dir, cfg=cfg)
         typer.echo(f"Saved: {path}")
+        if manifest:
+            _write_manifest(manifest, [{"id": vid, "status": "ok", "path": str(path)}])
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
+        if manifest:
+            _write_manifest(manifest, [{"id": vid, "status": "fail", "error": str(e)}])
         raise typer.Exit(1)
 
 
-def _batch(entries, output_dir: Path) -> None:
-    for entry in entries:
+def _write_manifest(path: Path, results: list[dict[str, Any]]) -> None:
+    summary = {
+        "total": len(results),
+        "ok": sum(1 for r in results if r.get("status") == "ok"),
+        "fail": sum(1 for r in results if r.get("status") == "fail"),
+    }
+    path.write_text(
+        json.dumps({"summary": summary, "results": results}, indent=2),
+        encoding="utf-8",
+    )
+
+
+def _batch(
+    entries,
+    output_dir: Path,
+    cfg: FetchConfig,
+    delay: float,
+    manifest: Optional[Path],
+    continue_on_error: bool,
+) -> None:
+    results: list[dict[str, Any]] = []
+    for i, entry in enumerate(entries):
         vid = entry.get("id") or entry.get("url")
         title = entry.get("title", vid)
         if not vid:
             continue
+        if i > 0 and delay > 0:
+            time.sleep(delay)
         try:
-            path = _save_transcript(vid, output_dir, title=title)
+            path = _save_transcript(vid, output_dir, title=title, cfg=cfg)
             typer.echo(f"OK   {path}")
+            results.append({"id": vid, "title": title, "status": "ok", "path": str(path)})
         except Exception as e:
             typer.echo(f"SKIP {title}: {e}")
+            results.append({"id": vid, "title": title, "status": "fail", "error": str(e)})
+            if not continue_on_error:
+                break
+    if manifest:
+        _write_manifest(manifest, results)
+        typer.echo(f"Manifest: {manifest}")
 
 
 @app.command()
@@ -342,6 +461,19 @@ def summary(
     keep_transcript: bool = typer.Option(
         False, "--keep-transcript", help="Also save the raw .txt alongside the summary"
     ),
+    backend: str = typer.Option("auto", "--backend", help="Transcript backend: auto | api | ytdlp"),
+    cookies: Optional[Path] = typer.Option(None, "--cookies", help="Netscape cookies.txt"),
+    cookies_from_browser: Optional[str] = typer.Option(
+        None,
+        "--cookies-from-browser",
+        help="Pull YouTube cookies from a local browser profile",
+    ),
+    proxy: Optional[str] = typer.Option(
+        None, "--proxy", help="Proxy URL(s), comma-separated for rotation"
+    ),
+    impersonate: Optional[str] = typer.Option(
+        None, "--impersonate", help="curl-cffi TLS-fingerprint target"
+    ),
 ):
     """Fetch transcript and produce a structured summary via Anthropic API.
 
@@ -355,8 +487,17 @@ def summary(
         typer.echo("summary only supports single-video URLs.", err=True)
         raise typer.Exit(1)
 
+    proxies_list = [p.strip() for p in proxy.split(",") if p.strip()] if proxy else None
+    cfg = FetchConfig(
+        backend=backend,
+        cookies=cookies,
+        cookies_from_browser=cookies_from_browser,
+        proxies=proxies_list,
+        impersonate=impersonate,
+    )
+
     title = _get_video_title(vid)
-    text = _fetch_transcript_text(vid)
+    text = _fetch_transcript_text(vid, cfg=cfg)
 
     if keep_transcript:
         dest = (output.parent if output else Path.cwd()) / (_sanitize(title) + ".txt")
