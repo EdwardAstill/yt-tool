@@ -10,12 +10,10 @@ redirects here.
 ## Install
 
 ```bash
-uv pip install -e .        # from source
-# once published:
-# pipx install yt-tool
+uv tool install git+https://github.com/EdwardAstill/yt-tool
 ```
 
-Install ffmpeg for audio + video extraction.
+Install ffmpeg for audio + video extraction:
 
 ```bash
 pacman -S ffmpeg   # or: apt install ffmpeg | brew install ffmpeg
