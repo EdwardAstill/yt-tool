@@ -731,10 +731,10 @@ class ProgressScreen(Screen):
                 self.app.pop_screen()
 
 
-class YtscriptApp(App):
-    """ytscript TUI — fetch YouTube transcripts interactively."""
+class YtToolApp(App):
+    """yt-tool TUI — fetch YouTube transcripts interactively."""
 
-    TITLE = "ytscript"
+    TITLE = "yt-tool"
 
     BINDINGS = [
         ("q", "quit", "Quit"),
@@ -745,5 +745,5 @@ class YtscriptApp(App):
 
 
 def main():
-    app = YtscriptApp()
+    app = YtToolApp()
     app.run()
