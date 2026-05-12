@@ -68,7 +68,7 @@ class InputScreen(Screen):
     def compose(self) -> ComposeResult:
         with Center():
             with Vertical(id="form-container"):
-                yield Static("ytscript", id="title")
+                yield Static("yt-tool", id="title")
                 yield Label("YouTube Channel or Playlist URL")
                 yield Input(
                     placeholder="@fireship, channel URL, or playlist URL",

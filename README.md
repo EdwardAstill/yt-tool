@@ -3,10 +3,6 @@
 One-stop YouTube CLI: transcripts, audio, **video (MP4)**, summaries,
 channel / playlist listing, and search. Also ships a Textual TUI.
 
-Formerly `ytscript` — renamed 2026-04-19 when the video subcommand
-landed and the scope outgrew its old name. The `ytscript` GitHub URL
-redirects here.
-
 ## Install
 
 ```bash

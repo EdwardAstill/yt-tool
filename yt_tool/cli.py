@@ -85,8 +85,6 @@ def _require_ffmpeg() -> None:
         raise typer.Exit(1)
 
 
-# ── URL helpers (adapted from ~/projects/ytscript/ytscript/core.py) ──────────
-
 def _extract_video_id(url: str) -> Optional[str]:
     parsed = urlparse(url)
     if parsed.hostname == "youtu.be":
