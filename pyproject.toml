@@ -7,7 +7,6 @@ requires-python = ">=3.10"
 dependencies = [
     "typer",
     "click",
-    "textual",
     "youtube-transcript-api",
     "yt-dlp",
     "curl-cffi>=0.10,<0.15",
@@ -27,4 +26,3 @@ dev = [
 
 [project.scripts]
 yt-tool = "yt_tool.cli:main"
-yt-tool-tui = "yt_tool.tui:main"

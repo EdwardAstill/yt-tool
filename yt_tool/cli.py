@@ -39,7 +39,12 @@ from yt_tool.core import (
     fetch_transcript as _fetch_transcript_text,
 )
 
-app = typer.Typer(help="YouTube: transcripts, audio, and summaries.")
+app = typer.Typer(
+    help=(
+        "YouTube CLI for transcripts, audio, video, summaries, channels, "
+        "playlists, and search."
+    )
+)
 
 
 # ── Dependency bootstrap ──────────────────────────────────────────────────────
